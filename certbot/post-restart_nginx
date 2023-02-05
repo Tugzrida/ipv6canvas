@@ -1,0 +1,5 @@
+#!/usr/bin/python3
+from os import system
+
+if system('nginx -t') == 0:
+    system('service nginx reload')

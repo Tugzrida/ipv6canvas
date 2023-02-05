@@ -1,0 +1,21 @@
+#!/usr/bin/python3
+import os, shutil, signal
+
+target_domain = "ipv6canvas.tugzrida.xyz"
+target_cert = "/etc/mosquitto/certs/server.pem"
+target_key = "/etc/mosquitto/certs/server.key"
+
+renewed_domains = os.environ["RENEWED_DOMAINS"].split(" ")
+renewed_path = os.environ["RENEWED_LINEAGE"]
+if target_domain in renewed_domains:
+    shutil.copyfile(os.path.join(renewed_path, "fullchain.pem"), target_cert)
+    shutil.copyfile(os.path.join(renewed_path, "privkey.pem"), target_key)
+
+    shutil.chown(target_cert, "mosquitto", "mosquitto")
+    shutil.chown(target_key, "mosquitto", "mosquitto")
+
+    os.chmod(target_cert, 0o600)
+    os.chmod(target_key, 0o600)
+
+    with open("/run/mosquitto/mosquitto.pid", "r") as f:
+        os.kill(int(f.read()), signal.SIGHUP)
