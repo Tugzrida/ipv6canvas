@@ -76,13 +76,13 @@ class Canvas:
             raise ValueError(f"Colour {(r, g, b)} is out of range")
 
         offset = x * 3
+        colour = bytearray((r, g, b))
 
-        with self._publishLock:
-            self.rows[y][offset] = r
-            self.rows[y][offset + 1] = g
-            self.rows[y][offset + 2] = b
+        if self.rows[y][offset:offset+3] != colour:
+            with self._publishLock:
+                self.rows[y][offset:offset+3] = colour
 
-            self._pendingRows.add(y)
+                self._pendingRows.add(y)
 
 
 
