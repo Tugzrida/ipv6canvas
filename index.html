@@ -22,7 +22,6 @@
             }
 
             div {
-                z-index: 99;
                 position: fixed;
                 background-color: rgba(238, 238, 238, 0.7);
                 padding: .75rem;
@@ -36,6 +35,13 @@
 
             a {
                 color: #0d6efd;
+            }
+
+            #status {
+                position: fixed;
+                cursor: help;
+                font-size: .75rem;
+                margin-top: .5rem;
             }
 
             canvas {
@@ -58,12 +64,14 @@
             </p>
         </div>
 
+        <span id="status" title="Disconnected">🔴</span>
+
         <canvas width="3072" height="3072"></canvas>
         <script>
             const ctx = document.querySelector("canvas").getContext("2d")
             ctx.scale(12/3, 12)
 
-            const mqtt = new Paho.Client("wss://ipv6canvas.tugzrida.xyz:8884/", "web")
+            const mqtt = new Paho.Client("wss://ipv6canvas.tugzrida.xyz:8884/", "")
 
             mqtt.onMessageArrived = m => {
                 const y = parseInt(m.topic),
@@ -73,6 +81,18 @@
                     ctx.fillStyle = `rgb(${colourArray[crs]},${colourArray[crs+1]},${colourArray[crs+2]})`
                     ctx.fillRect(crs, y, 3, 1)
                 }
+            }
+
+            const status = document.querySelector("#status")
+
+            mqtt.onConnectionLost = () => {
+                status.innerText = "🔴"
+                status.title = "Disconnected"
+            }
+
+            mqtt.onConnected = () => {
+                status.innerText = "🟢"
+                status.title = "Connected"
             }
 
             mqtt.connect({onSuccess: () => mqtt.subscribe("#"), reconnect: true})
