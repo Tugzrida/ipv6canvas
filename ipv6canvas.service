@@ -1,0 +1,12 @@
+[Unit]
+Description=ipv6canvas
+After=network.target
+
+[Service]
+Type=simple
+Environment="PYTHONUNBUFFERED=TRUE"
+ExecStart=/root/main.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
