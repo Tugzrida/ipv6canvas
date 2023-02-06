@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>IPv6Canvas</title>
+        <script src="https://cdn.jsdelivr.net/npm/paho-mqtt@1.1.0/paho-mqtt-min.js" integrity="sha256-UdiHBNTn/flyY161ZpfRY8XIavfgKFmgXDMe2n8/tzA=" crossorigin="anonymous"></script>
+        <style>
+            html, body {
+                height: 100%;
+                width: 100%;
+            }
+
+            body {
+                margin: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                background-color: #282828;
+
+                font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+            }
+
+            div {
+                z-index: 99;
+                position: fixed;
+                background-color: rgba(238, 238, 238, 0.7);
+                padding: .75rem;
+                border-bottom-left-radius: .5rem;
+                border-bottom-right-radius: .5rem;
+            }
+
+            code {
+                color: #d63384;
+            }
+
+            a {
+                color: #0d6efd;
+            }
+
+            canvas {
+                object-fit: contain;
+                width: 100%;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <p>
+                <strong>Hello!</strong> You can draw on this canvas with IPv6!
+            </p>
+            <p>
+                Just ping <code>2400:8902:e001:233:XXYY:RR:GG:BB</code>, substituting a coordinate and colour.
+            </p>
+            <p>
+                Read more <a href="https://blog.tugzrida.xyz/2023/01/">on my blog</a>
+            </p>
+        </div>
+
+        <canvas width="3072" height="3072"></canvas>
+        <script>
+            const ctx = document.querySelector("canvas").getContext("2d")
+            ctx.scale(12/3, 12)
+
+            const mqtt = new Paho.Client("wss://ipv6canvas.tugzrida.xyz:8884/", "web")
+
+            mqtt.onMessageArrived = m => {
+                const y = parseInt(m.topic),
+                    colourArray = m.payloadBytes;
+
+                for (let crs = 0; crs < colourArray.length; crs += 3) {
+                    ctx.fillStyle = `rgb(${colourArray[crs]},${colourArray[crs+1]},${colourArray[crs+2]})`
+                    ctx.fillRect(crs, y, 3, 1)
+                }
+            }
+
+            mqtt.connect({onSuccess: () => mqtt.subscribe("#"), reconnect: true})
+
+        </script>
+    </body>
+</html>
