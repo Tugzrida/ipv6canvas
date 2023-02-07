@@ -86,6 +86,42 @@ class Canvas:
 
 
 
+class RateLimiter():
+    def __init__(self):
+        self._lastReset = time.time()
+        self._buckets = {}
+        self._reaping = False
+
+
+    def _reaper(self):
+        try:
+            self._reaping = True
+
+            while True:
+                time.sleep(10)
+                self._buckets = {}
+        finally:
+            self._reaping = False
+
+
+    def startReaping(self):
+        if not self._reaping:
+            log.info("Starting RateLimiter reaping")
+            threading.Thread(target=self._reaper, daemon=True).start()
+
+
+    def count(self, addr):
+        addr = socket.inet_pton(socket.AF_INET6, addr)[:7]
+
+        try:
+            self._buckets[addr] += 1
+        except KeyError:
+            self._buckets[addr] = 1
+
+        return self._buckets[addr] < 128*128
+
+
+
 mqttc = paho.mqtt.client.Client()
 mqttc.connect("::1")
 mqttc.loop_start()
@@ -94,7 +130,10 @@ canvas = Canvas(256, 256, mqttc)
 canvas.loadFromMQTT()
 canvas.startPublishing()
 
-canvasSubnet = ipaddress.IPv6Network("2400:8902:e001:233::/64")
+ratelim = RateLimiter()
+ratelim.startReaping()
+
+canvasPrefix = socket.inet_pton(socket.AF_INET6, "2400:8902:e001:233::")[:8]
 
 sock = socket.socket(socket.AF_INET6, socket.SOCK_RAW, socket.IPPROTO_ICMPV6)
 sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_RECVPKTINFO, 1)
@@ -104,16 +143,15 @@ while True:
     data = sock.recvmsg(1, 32)
     if data[0] == b"\x80":
         # ICMPv6 echo request
-        pingDstRaw = data[1][0][2][:16]
-        pingDst = ipaddress.IPv6Address(pingDstRaw)
+        pingDst = data[1][0][2][:16]
 
-        if pingDst in canvasSubnet:
+        if pingDst.startswith(canvasPrefix) and ratelim.count(data[3][0]):
             # 2400:8902:e001:233:XXYY:RR:GG:BB
-            x = pingDstRaw[8]
-            y = pingDstRaw[9]
-            r = pingDstRaw[11]
-            g = pingDstRaw[13]
-            b = pingDstRaw[15]
+            x = pingDst[8]
+            y = pingDst[9]
+            r = pingDst[11]
+            g = pingDst[13]
+            b = pingDst[15]
 
             try:
                 canvas.setPixel(x, y, r, g, b)
