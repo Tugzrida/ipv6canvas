@@ -52,7 +52,7 @@ class Canvas:
             self._publishing = True
 
             while True:
-                time.sleep(0.01)
+                time.sleep(0.02)
 
                 if self._pendingRows:
                     with self._publishLock:
@@ -111,7 +111,7 @@ class RateLimiter():
 
 
     def count(self, addr):
-        addr = socket.inet_pton(socket.AF_INET6, addr)[:7]
+        addr = socket.inet_pton(socket.AF_INET6, addr)[:6]
 
         try:
             self._buckets[addr] += 1
