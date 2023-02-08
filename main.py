@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import socket, ipaddress, paho.mqtt.client, time, threading, logging, os
+import socket, paho.mqtt.client, time, threading, logging, os
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO").upper())
 log = logging.getLogger("ipv6canvas")
@@ -145,7 +145,7 @@ while True:
         # ICMPv6 echo request
         pingDst = data[1][0][2][:16]
 
-        if pingDst.startswith(canvasPrefix) and ratelim.count(data[3][0]):
+        if pingDst[:8] == canvasPrefix and ratelim.count(data[3][0]):
             # 2400:8902:e001:233:XXYY:RR:GG:BB
             x = pingDst[8]
             y = pingDst[9]
